@@ -162,7 +162,7 @@ import {
   DEMO_KID_IDS,
   DEMO_LOGIN_CODE_IDS,
   DEMO_AUDIT_LOG_IDS,
-} from '@/lib/firebase-service';
+} from '@/lib/sql-service';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
   auth,
@@ -170,7 +170,6 @@ import {
   signInAdminWithGoogle,
   signInServantWithGoogle,
   signOutFirebaseAuth,
-  testFirestoreConnection,
 } from '@/lib/firebase';
 
 type SimulatedUiState = 'normal' | 'loading' | 'empty' | 'error' | 'offline';
@@ -416,9 +415,8 @@ export const CarnivalAuthPortal: React.FC = () => {
       }
     }, 2500);
 
-    const initFirebaseSync = async () => {
+    const initSqlSync = async () => {
       try {
-        await testFirestoreConnection();
         await seedInitialDataIfEmpty(INITIAL_SERVANTS, INITIAL_KID_PARTICIPANTS, INITIAL_EDITION);
 
         unsubscribeEdition = subscribeToEdition(INITIAL_EDITION.id, (remoteEdition) => {
@@ -600,7 +598,7 @@ export const CarnivalAuthPortal: React.FC = () => {
       }
     };
 
-    initFirebaseSync();
+    initSqlSync();
 
     return () => {
       isMounted = false;

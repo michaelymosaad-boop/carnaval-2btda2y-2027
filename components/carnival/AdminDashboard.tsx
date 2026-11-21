@@ -78,7 +78,7 @@ import {
   DEMO_AUDIT_LOG_IDS,
   DEMO_KID_IDS,
   DEMO_SERVANT_IDS,
-} from '@/lib/firebase-service';
+} from '@/lib/sql-service';
 import {
   exportAuditLogsWorkbook,
   exportCarnivalMasterWorkbook,

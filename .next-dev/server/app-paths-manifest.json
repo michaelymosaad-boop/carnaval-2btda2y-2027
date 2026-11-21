@@ -1,5 +1,5 @@
 {
   "/api/branding/route": "app/api/branding/route.js",
-  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
-  "/page": "app/page.js"
+  "/api/carnival/health/route": "app/api/carnival/health/route.js",
+  "/api/carnival/sync/route": "app/api/carnival/sync/route.js"
 }

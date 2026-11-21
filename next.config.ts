@@ -12,6 +12,7 @@ export default function createNextConfig(phase: string): NextConfig {
       ignoreBuildErrors: false,
     },
     devIndicators: false,
+    serverExternalPackages: ['pg', 'firebase-admin'],
     // Allow access to remote image placeholder.
     images: {
       remotePatterns: [
