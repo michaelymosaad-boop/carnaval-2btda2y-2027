@@ -1,0 +1,318 @@
+{
+  "entities": {
+    "edition": {
+      "title": "Edition",
+      "description": "Carnival edition metadata, branding, and event dates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "code_label": { "type": "string", "maxLength": 120 },
+        "church_name": { "type": "string", "maxLength": 200 },
+        "service_title": { "type": "string", "maxLength": 240 },
+        "motto": { "type": "string", "maxLength": 240 },
+        "church_logo_url": { "type": "string", "maxLength": 500000 },
+        "service_logo_url": { "type": "string", "maxLength": 500000 },
+        "carnival_logo_url": { "type": "string", "maxLength": 500000 },
+        "starts_on": { "type": "string", "maxLength": 64 },
+        "ends_on": { "type": "string", "maxLength": 64 },
+        "footer_text": { "type": "string", "maxLength": 300 },
+        "current_stage": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "active", "archived"] }
+      },
+      "required": ["id", "name", "church_name", "status"]
+    },
+    "servant": {
+      "title": "ServantPublic",
+      "description": "Public operational and hashed verification fields for a servant (no PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "full_name": { "type": "string", "maxLength": 160 },
+        "service_id": { "type": "string", "maxLength": 128 },
+        "phone_hash": { "type": "string", "maxLength": 128 },
+        "email_hash": { "type": "string", "maxLength": 128 },
+        "national_id_hash": { "type": "string", "maxLength": 128 },
+        "national_id_last4": { "type": "string", "maxLength": 16 },
+        "gender": { "type": "string", "enum": ["ذكر", "أنثى"] },
+        "governorate": { "type": "string", "maxLength": 120 },
+        "avatar_url": { "type": "string", "maxLength": 500000 },
+        "health_and_skills": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "disabled"] },
+        "qr_token": { "type": "string", "maxLength": 128 },
+        "pin_code": { "type": "string", "maxLength": 32 },
+        "pin_code_hash": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 120 },
+        "can_view_kids_codes": { "type": "boolean" },
+        "can_manage_coding": { "type": "boolean" },
+        "admin_username": { "type": "string", "maxLength": 120 },
+        "admin_password_hash": { "type": "string", "maxLength": 128 },
+        "custom_password_hash": { "type": "string", "maxLength": 128 },
+        "primary_role": { "type": "string", "enum": ["team_lead", "staff"] },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "full_name", "phone_hash", "status"]
+    },
+    "servant_private": {
+      "title": "ServantPrivatePII",
+      "description": "Admin-only private PII record for a servant",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string", "maxLength": 32 },
+        "whatsapp": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 160 },
+        "national_id_display": { "type": "string", "maxLength": 64 },
+        "birth_date": { "type": "string", "maxLength": 64 },
+        "health_notes": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["phone"]
+    },
+    "kid": {
+      "title": "KidPublic",
+      "description": "Public operational record for a registered child (no parent PII or health notes)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "full_name": { "type": "string", "maxLength": 160 },
+        "service_id": { "type": "string", "maxLength": 128 },
+        "grade_label": { "type": "string", "maxLength": 120 },
+        "team_name": { "type": "string", "maxLength": 160 },
+        "pin_code": { "type": "string", "maxLength": 32 },
+        "qr_token": { "type": "string", "maxLength": 128 },
+        "registered_by_name": { "type": "string", "maxLength": 160 },
+        "source": { "type": "string", "enum": ["manual", "excel"] },
+        "team_updated_by_servant_id": { "type": "string", "maxLength": 128 },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "full_name", "pin_code", "created_at"]
+    },
+    "kid_private": {
+      "title": "KidPrivatePII",
+      "description": "Admin-only private PII record for a registered child",
+      "type": "object",
+      "properties": {
+        "parent_phone": { "type": "string", "maxLength": 32 },
+        "health_notes": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["parent_phone"]
+    },
+    "login_code": {
+      "title": "LoginCode",
+      "description": "Hashed login code linked to a servant QR/PIN record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "servant_id": { "type": "string", "maxLength": 128 },
+        "code_hash": { "type": "string", "maxLength": 128 },
+        "delivery_status": { "type": "string", "enum": ["sent", "failed", "whatsapp_sent"] },
+        "used_at": { "type": "string", "maxLength": 64 },
+        "expires_at": { "type": "string", "maxLength": 64 },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "servant_id", "code_hash", "delivery_status", "expires_at", "created_at"]
+    },
+    "admin_auth": {
+      "title": "AdminAuthConfig",
+      "description": "One-time admin bootstrap code state and permanent hashed admin credentials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "admin_servant_id": { "type": "string", "maxLength": 128 },
+        "admin_email": { "type": "string", "maxLength": 160 },
+        "admin_username": { "type": "string", "maxLength": 120 },
+        "admin_password_hash": { "type": "string", "maxLength": 128 },
+        "bootstrap_code_hash": { "type": "string", "maxLength": 128 },
+        "bootstrap_used": { "type": "boolean" },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "edition_id", "admin_servant_id", "admin_email", "bootstrap_used", "updated_at"]
+    },
+    "point_entry": {
+      "title": "PointEntry",
+      "description": "Points recorded for a servant during carnival activities",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "servant_id": { "type": "string", "maxLength": 128 },
+        "activity_name": { "type": "string", "maxLength": 160 },
+        "points": { "type": "number" },
+        "timestamp": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "servant_id", "points", "timestamp"]
+    },
+    "gate_checkin": {
+      "title": "GateCheckinRecord",
+      "description": "Single-entry gate check-in record per participant/servant with early arrival calculation (no PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "subject_type": { "type": "string", "enum": ["kid", "servant"] },
+        "subject_id": { "type": "string", "maxLength": 128 },
+        "subject_name": { "type": "string", "maxLength": 160 },
+        "service_id": { "type": "string", "maxLength": 128 },
+        "team_name": { "type": "string", "maxLength": 160 },
+        "qr_token": { "type": "string", "maxLength": 128 },
+        "pin_code": { "type": "string", "maxLength": 32 },
+        "checked_in_at": { "type": "string", "maxLength": 64 },
+        "checked_in_local_time": { "type": "string", "maxLength": 16 },
+        "is_early_arrival": { "type": "boolean" },
+        "gate_points_awarded": { "type": "number" },
+        "early_bonus_awarded": { "type": "number" },
+        "recorded_by_servant_id": { "type": "string", "maxLength": 128 },
+        "recorded_by_name": { "type": "string", "maxLength": 160 }
+      },
+      "required": [
+        "id", "edition_id", "subject_type", "subject_id", "subject_name", "service_id",
+        "qr_token", "checked_in_at", "checked_in_local_time", "is_early_arrival",
+        "gate_points_awarded", "early_bonus_awarded", "recorded_by_servant_id", "recorded_by_name"
+      ]
+    },
+    "points_ledger_entry": {
+      "title": "PointsLedgerEntry",
+      "description": "Immutable append-only team and participant score ledger entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "team_id": { "type": "string", "maxLength": 128 },
+        "team_name": { "type": "string", "maxLength": 160 },
+        "round_id": { "type": "string", "maxLength": 128 },
+        "round_title": { "type": "string", "maxLength": 160 },
+        "axis_name": { "type": "string", "maxLength": 120 },
+        "target_type": { "type": "string", "enum": ["team", "kid", "servant"] },
+        "target_id": { "type": "string", "maxLength": 128 },
+        "target_name": { "type": "string", "maxLength": 160 },
+        "source": { "type": "string", "enum": ["gate", "early_bonus", "round", "team_spirit", "correction"] },
+        "points": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 300 },
+        "recorded_by_servant_id": { "type": "string", "maxLength": 128 },
+        "recorded_by_name": { "type": "string", "maxLength": 160 },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": [
+        "id", "edition_id", "team_id", "team_name", "target_type", "source",
+        "points", "reason", "recorded_by_servant_id", "recorded_by_name", "created_at"
+      ]
+    },
+    "emergency_alert": {
+      "title": "EmergencyAlertRecord",
+      "description": "Field emergency, lost child, or lost-and-found operational alert (no PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "enum": ["medical", "lost_child", "lost_item", "logistics", "schedule_change"] },
+        "severity": { "type": "string", "enum": ["normal", "urgent", "critical"] },
+        "title": { "type": "string", "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 600 },
+        "location": { "type": "string", "maxLength": 160 },
+        "related_person_id": { "type": "string", "maxLength": 128 },
+        "related_person_name": { "type": "string", "maxLength": 160 },
+        "related_team_name": { "type": "string", "maxLength": 160 },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved"] },
+        "reported_by_servant_id": { "type": "string", "maxLength": 128 },
+        "reported_by_name": { "type": "string", "maxLength": 160 },
+        "updated_by_servant_id": { "type": "string", "maxLength": 128 },
+        "resolved_by_name": { "type": "string", "maxLength": 160 },
+        "resolution_note": { "type": "string", "maxLength": 400 },
+        "created_at": { "type": "string", "maxLength": 64 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": [
+        "id", "edition_id", "category", "severity", "title", "description", "location",
+        "status", "reported_by_servant_id", "reported_by_name", "created_at", "updated_at"
+      ]
+    },
+    "audit_log": {
+      "title": "AuditLogRecord",
+      "description": "Immutable append-only operational audit trail record (no PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "actor_id": { "type": "string", "maxLength": 128 },
+        "actor_name": { "type": "string", "maxLength": 160 },
+        "action": { "type": "string", "maxLength": 120 },
+        "target": { "type": "string", "maxLength": 200 },
+        "details": { "type": "object" },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "edition_id", "actor_name", "action", "target", "created_at"]
+    },
+    "portal_config": {
+      "title": "PortalConfig",
+      "description": "Admin-managed carnival portal policy, coded grades, coded teams, and role assignments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "edition_id": { "type": "string", "maxLength": 128 },
+        "attendance_policy": { "type": "object" },
+        "coded_grades": { "type": "array" },
+        "coded_teams": { "type": "array" },
+        "servant_roles": { "type": "array" },
+        "activity_rounds": { "type": "array" },
+        "axes": { "type": "array" },
+        "carnival_history": { "type": "array" },
+        "demo_data_cleared": { "type": "boolean" },
+        "demo_cleaned_at": { "type": "string", "maxLength": 64 },
+        "updated_by_servant_id": { "type": "string", "maxLength": 128 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "edition_id", "updated_at"]
+    }
+  },
+  "firestore": {
+    "/editions/{editionId}": {
+      "schema": "edition",
+      "description": "Carnival edition information and branding"
+    },
+    "/editions/{editionId}/config/{configId}": {
+      "schema": "portal_config",
+      "description": "Operational portal policy, coding master data, role assignments, and admin_auth bootstrap config"
+    },
+    "/editions/{editionId}/gate_checkins/{checkinId}": {
+      "schema": "gate_checkin",
+      "description": "One-time gate check-in ledger for carnival day arrivals"
+    },
+    "/editions/{editionId}/points_ledger/{entryId}": {
+      "schema": "points_ledger_entry",
+      "description": "Immutable append-only team and participant score entries"
+    },
+    "/editions/{editionId}/alerts/{alertId}": {
+      "schema": "emergency_alert",
+      "description": "Field medical, lost-child, lost-item, and logistics alerts"
+    },
+    "/editions/{editionId}/audit_logs/{logId}": {
+      "schema": "audit_log",
+      "description": "Append-only operational audit logs for security and administration"
+    },
+    "/servants/{servantId}": {
+      "schema": "servant",
+      "description": "Public hashed verification and operational records for servants"
+    },
+    "/servants/{servantId}/private/{docId}": {
+      "schema": "servant_private",
+      "description": "Admin-only isolated PII for servants"
+    },
+    "/login_codes/{codeId}": {
+      "schema": "login_code",
+      "description": "Hashed login PIN/QR linkage records for servants"
+    },
+    "/kids/{kidId}": {
+      "schema": "kid",
+      "description": "Public coding and team records for registered kids"
+    },
+    "/kids/{kidId}/private/{docId}": {
+      "schema": "kid_private",
+      "description": "Admin-only isolated parent phone and health notes for registered kids"
+    },
+    "/servants/{servantId}/points/{pointId}": {
+      "schema": "point_entry",
+      "description": "Activity points scored by a servant"
+    }
+  }
+}

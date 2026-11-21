@@ -1,0 +1,629 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'Michael.Y.Mosaad@gmail.com' ||
+        request.auth.token.email == 'michael.y.mosaad@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidOptionalNullableString(data, fieldName, maxLen) {
+      return !data.keys().hasAny([fieldName]) ||
+        data[fieldName] == null ||
+        (data[fieldName] is string && data[fieldName].size() <= maxLen);
+    }
+
+    function isValidOptionalString(data, fieldName, maxLen) {
+      return !data.keys().hasAny([fieldName]) ||
+        (data[fieldName] is string && data[fieldName].size() <= maxLen);
+    }
+
+    function isValidEdition(data, editionId) {
+      return data.keys().hasAll(['id', 'name', 'church_name', 'status'])
+        && data.keys().hasOnly([
+          'id', 'name', 'code_label', 'church_name', 'service_title', 'motto',
+          'church_logo_url', 'service_logo_url', 'carnival_logo_url',
+          'starts_on', 'ends_on', 'footer_text', 'current_stage', 'status'
+        ])
+        && data.id is string && data.id == editionId && data.id.size() <= 128
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 200
+        && data.church_name is string && data.church_name.size() >= 1 && data.church_name.size() <= 200
+        && data.status in ['draft', 'active', 'archived']
+        && isValidOptionalString(data, 'code_label', 120)
+        && isValidOptionalString(data, 'service_title', 240)
+        && isValidOptionalString(data, 'motto', 240)
+        && isValidOptionalNullableString(data, 'church_logo_url', 500000)
+        && isValidOptionalNullableString(data, 'service_logo_url', 500000)
+        && isValidOptionalNullableString(data, 'carnival_logo_url', 500000)
+        && isValidOptionalString(data, 'starts_on', 64)
+        && isValidOptionalString(data, 'ends_on', 64)
+        && isValidOptionalString(data, 'footer_text', 300)
+        && (!data.keys().hasAny(['current_stage']) || (data.current_stage is number && data.current_stage >= 1 && data.current_stage <= 7));
+    }
+
+    function isValidServantPublic(data, servantId) {
+      return data.keys().hasAll(['id', 'full_name', 'phone_hash', 'status'])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'full_name', 'service_id', 'phone_hash', 'email_hash',
+          'national_id_hash', 'national_id_last4', 'gender', 'governorate',
+          'avatar_url', 'health_and_skills', 'status', 'qr_token', 'pin_code', 'pin_code_hash', 'username',
+          'can_view_kids_codes', 'can_manage_coding',
+          'admin_username', 'admin_password_hash', 'custom_password_hash', 'primary_role', 'created_at'
+        ])
+        && data.id is string && data.id == servantId && data.id.size() <= 128
+        && data.full_name is string && data.full_name.size() >= 2 && data.full_name.size() <= 160
+        && data.phone_hash is string && data.phone_hash.size() >= 4 && data.phone_hash.size() <= 128
+        && data.status in ['pending', 'approved', 'disabled']
+        && isValidOptionalString(data, 'edition_id', 128)
+        && isValidOptionalString(data, 'service_id', 128)
+        && isValidOptionalString(data, 'email_hash', 128)
+        && isValidOptionalString(data, 'national_id_hash', 128)
+        && isValidOptionalString(data, 'national_id_last4', 16)
+        && (!data.keys().hasAny(['gender']) || data.gender in ['ذكر', 'أنثى'])
+        && isValidOptionalString(data, 'governorate', 120)
+        && isValidOptionalNullableString(data, 'avatar_url', 500000)
+        && isValidOptionalString(data, 'qr_token', 128)
+        && isValidOptionalString(data, 'pin_code', 32)
+        && isValidOptionalString(data, 'pin_code_hash', 128)
+        && isValidOptionalString(data, 'username', 120)
+        && (!data.keys().hasAny(['can_view_kids_codes']) || data.can_view_kids_codes is bool)
+        && (!data.keys().hasAny(['can_manage_coding']) || data.can_manage_coding is bool)
+        && isValidOptionalString(data, 'admin_username', 120)
+        && isValidOptionalString(data, 'admin_password_hash', 128)
+        && isValidOptionalString(data, 'custom_password_hash', 128)
+        && (!data.keys().hasAny(['primary_role']) || data.primary_role == null || data.primary_role in ['team_lead', 'staff'])
+        && isValidOptionalString(data, 'created_at', 64)
+        && (!data.keys().hasAny(['health_and_skills']) || (
+          data.health_and_skills is map
+          && data.health_and_skills.keys().hasAll(['skills', 'health_notes'])
+          && data.health_and_skills.keys().hasOnly(['skills', 'health_notes'])
+          && data.health_and_skills.skills is list
+          && data.health_and_skills.skills.size() <= 15
+          && (data.health_and_skills.skills.size() == 0 || data.health_and_skills.skills[0] is string)
+          && data.health_and_skills.health_notes is string
+          && data.health_and_skills.health_notes.size() == 0
+        ));
+    }
+
+    function isValidServantPrivate(data) {
+      return data.keys().hasAll(['phone'])
+        && data.keys().hasOnly([
+          'phone', 'whatsapp', 'email', 'national_id_display', 'birth_date', 'health_notes'
+        ])
+        && data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 32
+        && isValidOptionalString(data, 'whatsapp', 32)
+        && isValidOptionalString(data, 'email', 160)
+        && isValidOptionalString(data, 'national_id_display', 64)
+        && isValidOptionalString(data, 'birth_date', 64)
+        && isValidOptionalString(data, 'health_notes', 500);
+    }
+
+    function isValidPublicServantRegistration(data) {
+      return !(data.keys().hasAny(['can_manage_coding']) && data.can_manage_coding == true)
+        && !(data.keys().hasAny(['can_view_kids_codes']) && data.can_view_kids_codes == true)
+        && (
+          data.id == 's-admin-1' || (
+            !data.keys().hasAny(['admin_username', 'admin_password_hash'])
+          )
+        );
+    }
+
+    function isValidKidPublic(data, kidId) {
+      return data.keys().hasAll(['id', 'full_name', 'pin_code', 'created_at'])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'full_name', 'service_id', 'grade_label',
+          'team_name', 'pin_code', 'qr_token', 'registered_by_name', 'source',
+          'team_updated_by_servant_id', 'created_at'
+        ])
+        && data.id is string && data.id == kidId && data.id.size() <= 128
+        && data.full_name is string && data.full_name.size() >= 2 && data.full_name.size() <= 160
+        && data.pin_code is string && data.pin_code.size() >= 4 && data.pin_code.size() <= 32
+        && data.created_at is string && data.created_at.size() >= 4 && data.created_at.size() <= 64
+        && isValidOptionalString(data, 'edition_id', 128)
+        && isValidOptionalString(data, 'service_id', 128)
+        && isValidOptionalString(data, 'grade_label', 120)
+        && isValidOptionalString(data, 'team_name', 160)
+        && isValidOptionalString(data, 'qr_token', 128)
+        && isValidOptionalString(data, 'registered_by_name', 160)
+        && isValidOptionalString(data, 'team_updated_by_servant_id', 128)
+        && (!data.keys().hasAny(['source']) || data.source in ['manual', 'excel']);
+    }
+
+    function isValidKidPrivate(data) {
+      return data.keys().hasAll(['parent_phone'])
+        && data.keys().hasOnly(['parent_phone', 'health_notes'])
+        && data.parent_phone is string && data.parent_phone.size() <= 32
+        && isValidOptionalString(data, 'health_notes', 500);
+    }
+
+    function isValidLoginCode(data, codeId) {
+      return data.keys().hasAll(['id', 'servant_id', 'code_hash', 'delivery_status', 'expires_at', 'created_at'])
+        && data.keys().hasOnly([
+          'id', 'servant_id', 'code_hash', 'delivery_status', 'used_at', 'expires_at', 'created_at'
+        ])
+        && data.id is string && data.id == codeId && data.id.size() <= 128
+        && isValidId(data.servant_id)
+        && data.code_hash is string && data.code_hash.size() >= 4 && data.code_hash.size() <= 128
+        && data.delivery_status in ['sent', 'failed', 'whatsapp_sent']
+        && isValidOptionalNullableString(data, 'used_at', 64)
+        && data.expires_at is string && data.expires_at.size() >= 4 && data.expires_at.size() <= 64
+        && data.created_at is string && data.created_at.size() >= 4 && data.created_at.size() <= 64;
+    }
+
+    function isValidAdminAuthConfig(data, editionId) {
+      return data.keys().hasAll(['id', 'edition_id', 'admin_servant_id', 'admin_email', 'bootstrap_used', 'updated_at'])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'admin_servant_id', 'admin_email',
+          'admin_username', 'admin_password_hash', 'bootstrap_code_hash', 'bootstrap_used', 'updated_at'
+        ])
+        && data.id is string && data.id == 'admin_auth' && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && data.admin_servant_id is string && data.admin_servant_id == 's-admin-1'
+        && data.admin_email is string && data.admin_email.size() <= 160
+        && data.bootstrap_used is bool
+        && isValidOptionalString(data, 'admin_username', 120)
+        && isValidOptionalString(data, 'admin_password_hash', 128)
+        && isValidOptionalString(data, 'bootstrap_code_hash', 128)
+        && data.updated_at is string && data.updated_at.size() >= 4 && data.updated_at.size() <= 64;
+    }
+
+    function isValidPointEntry(data, pointId, servantId) {
+      return data.keys().hasAll(['id', 'servant_id', 'points', 'timestamp'])
+        && data.keys().hasOnly(['id', 'servant_id', 'activity_name', 'points', 'timestamp'])
+        && data.id is string && data.id == pointId && data.id.size() <= 128
+        && data.servant_id is string && data.servant_id == servantId && data.servant_id.size() <= 128
+        && isValidOptionalString(data, 'activity_name', 160)
+        && data.points is number && data.points >= -1000 && data.points <= 10000
+        && data.timestamp is string && data.timestamp.size() >= 4 && data.timestamp.size() <= 64;
+    }
+
+    function isApprovedServantActor(servantId) {
+      return isValidId(servantId)
+        && exists(/databases/$(database)/documents/servants/$(servantId))
+        && get(/databases/$(database)/documents/servants/$(servantId)).data.status == 'approved';
+    }
+
+    function isOperationalStaffActor(servantId) {
+      return isApprovedServantActor(servantId) && (
+        servantId == 's-admin-1'
+        || get(/databases/$(database)/documents/servants/$(servantId)).data.primary_role == 'staff'
+        || get(/databases/$(database)/documents/servants/$(servantId)).data.can_manage_coding == true
+      );
+    }
+
+    function isApprovedParticipantOrStaff(actorId) {
+      return isValidId(actorId) && (
+        exists(/databases/$(database)/documents/servants/$(actorId))
+        || exists(/databases/$(database)/documents/kids/$(actorId))
+      );
+    }
+
+    function isValidGateCheckin(data, checkinId, editionId) {
+      return data.keys().hasAll([
+          'id', 'edition_id', 'subject_type', 'subject_id', 'subject_name', 'service_id',
+          'qr_token', 'checked_in_at', 'checked_in_local_time', 'is_early_arrival',
+          'gate_points_awarded', 'early_bonus_awarded', 'recorded_by_servant_id', 'recorded_by_name'
+        ])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'subject_type', 'subject_id', 'subject_name', 'service_id',
+          'team_name', 'qr_token', 'pin_code', 'checked_in_at', 'checked_in_local_time',
+          'is_early_arrival', 'gate_points_awarded', 'early_bonus_awarded',
+          'recorded_by_servant_id', 'recorded_by_name'
+        ])
+        && data.id is string && data.id == checkinId && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && data.subject_type in ['kid', 'servant']
+        && isValidId(data.subject_id)
+        && data.subject_name is string && data.subject_name.size() >= 2 && data.subject_name.size() <= 160
+        && data.service_id is string && data.service_id.size() >= 1 && data.service_id.size() <= 128
+        && isValidOptionalString(data, 'team_name', 160)
+        && data.qr_token is string && data.qr_token.size() >= 2 && data.qr_token.size() <= 128
+        && isValidOptionalString(data, 'pin_code', 32)
+        && data.checked_in_at is string && data.checked_in_at.size() >= 4 && data.checked_in_at.size() <= 64
+        && data.checked_in_local_time is string && data.checked_in_local_time.size() >= 4 && data.checked_in_local_time.size() <= 16
+        && data.is_early_arrival is bool
+        && data.gate_points_awarded is number && data.gate_points_awarded >= 0 && data.gate_points_awarded <= 500
+        && data.early_bonus_awarded is number && data.early_bonus_awarded >= 0 && data.early_bonus_awarded <= 500
+        && isValidId(data.recorded_by_servant_id)
+        && data.recorded_by_name is string && data.recorded_by_name.size() >= 2 && data.recorded_by_name.size() <= 160;
+    }
+
+    function isValidPointsLedgerEntry(data, entryId, editionId) {
+      return data.keys().hasAll([
+          'id', 'edition_id', 'team_id', 'team_name', 'target_type', 'source',
+          'points', 'reason', 'recorded_by_servant_id', 'recorded_by_name', 'created_at'
+        ])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'team_id', 'team_name', 'round_id', 'round_title', 'axis_name',
+          'target_type', 'target_id', 'target_name', 'source', 'points', 'reason',
+          'recorded_by_servant_id', 'recorded_by_name', 'created_at'
+        ])
+        && data.id is string && data.id == entryId && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && data.team_id is string && data.team_id.size() >= 1 && data.team_id.size() <= 128
+        && data.team_name is string && data.team_name.size() >= 1 && data.team_name.size() <= 160
+        && isValidOptionalString(data, 'round_id', 128)
+        && isValidOptionalString(data, 'round_title', 160)
+        && isValidOptionalString(data, 'axis_name', 120)
+        && data.target_type in ['team', 'kid', 'servant']
+        && isValidOptionalString(data, 'target_id', 128)
+        && isValidOptionalString(data, 'target_name', 160)
+        && data.source in ['gate', 'early_bonus', 'round', 'team_spirit', 'correction']
+        && data.points is number && data.points >= -1000 && data.points <= 1000
+        && (data.source == 'correction' || data.points >= 0)
+        && data.reason is string && data.reason.size() >= 2 && data.reason.size() <= 300
+        && isValidId(data.recorded_by_servant_id)
+        && data.recorded_by_name is string && data.recorded_by_name.size() >= 2 && data.recorded_by_name.size() <= 160
+        && data.created_at is string && data.created_at.size() >= 4 && data.created_at.size() <= 64;
+    }
+
+    function isValidEmergencyAlert(data, alertId, editionId) {
+      return data.keys().hasAll([
+          'id', 'edition_id', 'category', 'severity', 'title', 'description', 'location',
+          'status', 'reported_by_servant_id', 'reported_by_name', 'created_at', 'updated_at'
+        ])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'category', 'severity', 'title', 'description', 'location',
+          'related_person_id', 'related_person_name', 'related_team_name', 'status',
+          'reported_by_servant_id', 'reported_by_name', 'updated_by_servant_id',
+          'resolved_by_name', 'resolution_note', 'created_at', 'updated_at'
+        ])
+        && data.id is string && data.id == alertId && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && data.category in ['medical', 'lost_child', 'lost_item', 'logistics', 'schedule_change']
+        && data.severity in ['normal', 'urgent', 'critical']
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 180
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 600
+        && data.location is string && data.location.size() >= 1 && data.location.size() <= 160
+        && isValidOptionalString(data, 'related_person_id', 128)
+        && isValidOptionalString(data, 'related_person_name', 160)
+        && isValidOptionalString(data, 'related_team_name', 160)
+        && data.status in ['open', 'in_progress', 'resolved']
+        && isValidId(data.reported_by_servant_id)
+        && data.reported_by_name is string && data.reported_by_name.size() >= 2 && data.reported_by_name.size() <= 160
+        && isValidOptionalString(data, 'updated_by_servant_id', 128)
+        && isValidOptionalString(data, 'resolved_by_name', 160)
+        && isValidOptionalString(data, 'resolution_note', 400)
+        && data.created_at is string && data.created_at.size() >= 4 && data.created_at.size() <= 64
+        && data.updated_at is string && data.updated_at.size() >= 4 && data.updated_at.size() <= 64;
+    }
+
+    function isValidAuditLog(data, logId, editionId) {
+      return data.keys().hasAll(['id', 'edition_id', 'actor_name', 'action', 'target', 'created_at'])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'actor_id', 'actor_name', 'action', 'target', 'details', 'created_at'
+        ])
+        && data.id is string && data.id == logId && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && isValidOptionalNullableString(data, 'actor_id', 128)
+        && data.actor_name is string && data.actor_name.size() >= 1 && data.actor_name.size() <= 160
+        && data.action is string && data.action.size() >= 2 && data.action.size() <= 120
+        && data.target is string && data.target.size() >= 1 && data.target.size() <= 200
+        && (!data.keys().hasAny(['details']) || (
+          data.details is map && data.details.keys().size() <= 15
+        ))
+        && data.created_at is string && data.created_at.size() >= 4 && data.created_at.size() <= 64;
+    }
+
+    function isValidPortalConfig(data, configId, editionId) {
+      return data.keys().hasAll(['id', 'edition_id', 'updated_at'])
+        && data.keys().hasOnly([
+          'id', 'edition_id', 'attendance_policy', 'coded_grades', 'coded_teams', 'servant_roles',
+          'activity_rounds', 'axes', 'carnival_history', 'demo_data_cleared', 'demo_cleaned_at',
+          'updated_by_servant_id', 'updated_at'
+        ])
+        && data.id is string && data.id == configId && data.id.size() <= 128
+        && data.edition_id is string && data.edition_id == editionId && data.edition_id.size() <= 128
+        && isValidOptionalString(data, 'updated_by_servant_id', 128)
+        && isValidOptionalString(data, 'demo_cleaned_at', 64)
+        && (!data.keys().hasAny(['demo_data_cleared']) || data.demo_data_cleared is bool)
+        && data.updated_at is string && data.updated_at.size() >= 4 && data.updated_at.size() <= 64
+        && (!data.keys().hasAny(['attendance_policy']) || data.attendance_policy is map)
+        && (!data.keys().hasAny(['coded_grades']) || (
+          data.coded_grades is list && data.coded_grades.size() <= 50 && (data.coded_grades.size() == 0 || data.coded_grades[0] is map)
+        ))
+        && (!data.keys().hasAny(['coded_teams']) || (
+          data.coded_teams is list && data.coded_teams.size() <= 100 && (data.coded_teams.size() == 0 || data.coded_teams[0] is map)
+        ))
+        && (!data.keys().hasAny(['servant_roles']) || (
+          data.servant_roles is list && data.servant_roles.size() <= 500 && (data.servant_roles.size() == 0 || data.servant_roles[0] is map)
+        ))
+        && (!data.keys().hasAny(['activity_rounds']) || (
+          data.activity_rounds is list && data.activity_rounds.size() <= 100 && (data.activity_rounds.size() == 0 || data.activity_rounds[0] is map)
+        ))
+        && (!data.keys().hasAny(['axes']) || (
+          data.axes is list && data.axes.size() <= 12 && (data.axes.size() == 0 || data.axes[0] is map)
+        ))
+        && (!data.keys().hasAny(['carnival_history']) || (
+          data.carnival_history is list && data.carnival_history.size() <= 100 && (data.carnival_history.size() == 0 || data.carnival_history[0] is map)
+        ));
+    }
+
+    function isAuthorizedCodingMasterWrite(data, configId) {
+      return configId == 'coding'
+        && data.keys().hasOnly(['id', 'edition_id', 'coded_grades', 'coded_teams', 'updated_by_servant_id', 'updated_at'])
+        && data.keys().hasAny(['updated_by_servant_id'])
+        && data.updated_by_servant_id is string
+        && isValidId(data.updated_by_servant_id)
+        && exists(/databases/$(database)/documents/servants/$(data.updated_by_servant_id))
+        && get(/databases/$(database)/documents/servants/$(data.updated_by_servant_id)).data.can_manage_coding == true
+        && get(/databases/$(database)/documents/servants/$(data.updated_by_servant_id)).data.status == 'approved';
+    }
+
+    // Admin membership lookup documents (console/server-managed only)
+    match /admins/{adminUid} {
+      allow read: if isSignedIn() && request.auth.uid == adminUid;
+      allow write: if false;
+    }
+
+    // Editions: Publicly readable for carnival branding; initial seed allowed once for ed-carnival-2027, updates/deletes admin-only
+    match /editions/{editionId} {
+      allow read: if true;
+      allow create: if isValidId(editionId) && isValidEdition(incoming(), editionId) && (
+        isAdmin() || (editionId == 'ed-carnival-2027' && !exists(/databases/$(database)/documents/editions/ed-carnival-2027))
+      );
+      allow update: if isAdmin() && isValidId(editionId) && isValidEdition(incoming(), editionId) && incoming().id == existing().id;
+      allow delete: if isAdmin();
+
+      // Operational portal configuration (policy, coded grades/teams, rounds, axes, role assignments, admin_auth bootstrap)
+      match /config/{configId} {
+        allow read: if true;
+        allow create: if isValidId(editionId) && isValidId(configId) && (
+          (configId == 'admin_auth' && isValidAdminAuthConfig(incoming(), editionId) && (
+            isAdmin() || (editionId == 'ed-carnival-2027' && incoming().bootstrap_used == false)
+          ))
+          || (configId != 'admin_auth' && isValidPortalConfig(incoming(), configId, editionId) && (
+            isAdmin() || isAuthorizedCodingMasterWrite(incoming(), configId)
+          ))
+        );
+        allow update: if isValidId(editionId) && isValidId(configId)
+          && incoming().id == existing().id && incoming().edition_id == existing().edition_id && (
+          (configId == 'admin_auth' && isValidAdminAuthConfig(incoming(), editionId) && (
+            isAdmin() || (
+              existing().bootstrap_used == false
+              && incoming().bootstrap_used == true
+              && incoming().admin_servant_id == existing().admin_servant_id
+              && incoming().admin_email == existing().admin_email
+              && incoming().admin_username is string
+              && incoming().admin_username.size() >= 3
+              && incoming().admin_password_hash is string
+              && incoming().admin_password_hash.size() >= 8
+              && incoming().bootstrap_code_hash == ''
+            )
+          ))
+          || (configId != 'admin_auth' && isValidPortalConfig(incoming(), configId, editionId) && (
+            isAdmin() || isAuthorizedCodingMasterWrite(incoming(), configId)
+          ))
+        );
+        allow delete: if isAdmin() && isValidId(editionId) && isValidId(configId);
+      }
+
+      // Gate check-ins (deterministic doc ID prevents double gate check-in; immutable once recorded)
+      match /gate_checkins/{checkinId} {
+        allow read: if true;
+        allow create: if isValidId(editionId)
+          && isValidId(checkinId)
+          && isValidGateCheckin(incoming(), checkinId, editionId)
+          && (isAdmin() || isOperationalStaffActor(incoming().recorded_by_servant_id));
+        allow update: if false;
+        allow delete: if isAdmin() && isValidId(editionId) && isValidId(checkinId);
+      }
+
+      // Points ledger (strictly Append-Only: updates and deletes disabled for everyone)
+      match /points_ledger/{entryId} {
+        allow read: if true;
+        allow create: if isValidId(editionId)
+          && isValidId(entryId)
+          && isValidPointsLedgerEntry(incoming(), entryId, editionId)
+          && (
+            incoming().source != 'correction'
+            || isAdmin()
+            || incoming().recorded_by_servant_id == 's-admin-1'
+          )
+          && (isAdmin() || isOperationalStaffActor(incoming().recorded_by_servant_id));
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Field emergency & lost/found alerts (no PII stored here)
+      match /alerts/{alertId} {
+        allow read: if true;
+        allow create: if isValidId(editionId)
+          && isValidId(alertId)
+          && isValidEmergencyAlert(incoming(), alertId, editionId)
+          && incoming().status == 'open'
+          && (isAdmin() || isApprovedParticipantOrStaff(incoming().reported_by_servant_id));
+        allow update: if isValidId(editionId)
+          && isValidId(alertId)
+          && isValidEmergencyAlert(incoming(), alertId, editionId)
+          && incoming().id == existing().id
+          && incoming().edition_id == existing().edition_id
+          && incoming().created_at == existing().created_at
+          && incoming().reported_by_servant_id == existing().reported_by_servant_id
+          && (existing().status != 'resolved' || isAdmin())
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'updated_by_servant_id', 'resolved_by_name', 'resolution_note', 'updated_at'
+          ])
+          && (
+            isAdmin()
+            || (
+              incoming().keys().hasAny(['updated_by_servant_id'])
+              && incoming().updated_by_servant_id is string
+              && isOperationalStaffActor(incoming().updated_by_servant_id)
+            )
+          );
+        allow delete: if isAdmin() && isValidId(editionId) && isValidId(alertId);
+      }
+
+      // Append-only Audit Logs (no PII; Admin-only delete for demo cleanup; never updatable)
+      match /audit_logs/{logId} {
+        allow read: if true;
+        allow create: if isValidId(editionId)
+          && isValidId(logId)
+          && isValidAuditLog(incoming(), logId, editionId)
+          && (
+            isAdmin()
+            || !incoming().keys().hasAny(['actor_id'])
+            || incoming().actor_id == null
+            || isApprovedParticipantOrStaff(incoming().actor_id)
+            || incoming().action in [
+              'SERVANT_REGISTERED',
+              'LOGIN_FAILED_PIN',
+              'LOGIN_FAILED_CREDENTIALS',
+              'LOGIN_FAILED_RECOVERY',
+              'ADMIN_BOOTSTRAP_COMPLETED'
+            ]
+          );
+        allow update: if false;
+        allow delete: if isAdmin() && isValidId(editionId) && isValidId(logId);
+      }
+    }
+
+    // Servants Public (No PII): Hashed lookups and operational attributes only
+    match /servants/{servantId} {
+      allow read: if true;
+      allow create: if isValidId(servantId) && isValidServantPublic(incoming(), servantId) && (isAdmin() || isValidPublicServantRegistration(incoming()));
+      allow update: if isValidId(servantId) && isValidServantPublic(incoming(), servantId) && (
+        (isAdmin() && incoming().id == existing().id)
+        || (
+          servantId == 's-admin-1'
+          && incoming().id == existing().id
+          && incoming().edition_id == existing().edition_id
+          && incoming().status == existing().status
+          && incoming().qr_token == existing().qr_token
+          && incoming().created_at == existing().created_at
+          && incoming().diff(existing()).affectedKeys().hasOnly(['admin_username', 'admin_password_hash', 'username', 'custom_password_hash'])
+          && incoming().admin_username is string && incoming().admin_username.size() >= 3
+          && incoming().admin_password_hash is string && incoming().admin_password_hash.size() >= 8
+          && exists(/databases/$(database)/documents/editions/ed-carnival-2027/config/admin_auth)
+          && get(/databases/$(database)/documents/editions/ed-carnival-2027/config/admin_auth).data.bootstrap_used == false
+          && getAfter(/databases/$(database)/documents/editions/ed-carnival-2027/config/admin_auth).data.bootstrap_used == true
+        )
+        || (
+          incoming().id == existing().id
+          && incoming().edition_id == existing().edition_id
+          && incoming().national_id_hash == existing().national_id_hash
+          && incoming().qr_token == existing().qr_token
+          && incoming().status == existing().status
+          && incoming().created_at == existing().created_at
+          && incoming().diff(existing()).affectedKeys().hasOnly(['custom_password_hash', 'avatar_url', 'username'])
+          && (!incoming().diff(existing()).affectedKeys().hasAny(['username']) || (
+            !existing().keys().hasAny(['username']) || existing().username == ''
+          ))
+        )
+      );
+      allow delete: if isAdmin();
+
+      // Servants Private PII: Write-once on creation or Admin-only; Read/Update/Delete strictly Admin-only
+      match /private/{docId} {
+        allow read, update, delete: if isAdmin();
+        allow create: if docId == 'info'
+          && isValidId(servantId)
+          && isValidServantPrivate(incoming())
+          && (isAdmin() || !exists(/databases/$(database)/documents/servants/$(servantId)/private/info));
+      }
+
+      // Servant points subcollection (validates parent servant existence)
+      match /points/{pointId} {
+        allow read: if true;
+        allow create: if isValidId(servantId) && isValidId(pointId)
+          && isValidPointEntry(incoming(), pointId, servantId)
+          && exists(/databases/$(database)/documents/servants/$(servantId));
+        allow update: if isAdmin() && isValidId(servantId) && isValidId(pointId)
+          && isValidPointEntry(incoming(), pointId, servantId)
+          && incoming().id == existing().id
+          && incoming().servant_id == existing().servant_id
+          && incoming().timestamp == existing().timestamp;
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Hashed Login Codes (linked to servant ID card PIN/QR)
+    match /login_codes/{codeId} {
+      allow read: if true;
+      allow create: if isValidId(codeId) && isValidLoginCode(incoming(), codeId) && (
+        isAdmin()
+        || exists(/databases/$(database)/documents/servants/$(incoming().servant_id))
+        || existsAfter(/databases/$(database)/documents/servants/$(incoming().servant_id))
+      );
+      allow update: if isValidId(codeId) && (
+        (isAdmin() && isValidLoginCode(incoming(), codeId) && incoming().id == existing().id && incoming().servant_id == existing().servant_id)
+        || (
+          incoming().id == existing().id
+          && incoming().servant_id == existing().servant_id
+          && incoming().code_hash == existing().code_hash
+          && incoming().delivery_status == existing().delivery_status
+          && incoming().expires_at == existing().expires_at
+          && incoming().created_at == existing().created_at
+          && incoming().diff(existing()).affectedKeys().hasOnly(['used_at'])
+          && isValidOptionalNullableString(incoming(), 'used_at', 64)
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Kids Public (No PII): Coding, team, grade, PIN/QR only
+    match /kids/{kidId} {
+      allow read: if true;
+      allow create: if isValidId(kidId) && isValidKidPublic(incoming(), kidId);
+      allow update: if isValidId(kidId) && isValidKidPublic(incoming(), kidId) && incoming().id == existing().id && (
+        isAdmin()
+        || (
+          incoming().edition_id == existing().edition_id
+          && incoming().full_name == existing().full_name
+          && incoming().service_id == existing().service_id
+          && incoming().pin_code == existing().pin_code
+          && incoming().qr_token == existing().qr_token
+          && incoming().created_at == existing().created_at
+          && incoming().diff(existing()).affectedKeys().hasOnly(['team_name', 'team_updated_by_servant_id'])
+          && incoming().keys().hasAny(['team_updated_by_servant_id'])
+          && incoming().team_updated_by_servant_id is string
+          && isOperationalStaffActor(incoming().team_updated_by_servant_id)
+        )
+      );
+      allow delete: if isAdmin();
+
+      // Kids Private PII: Parent phone & health notes strictly Admin-only to read/update/delete
+      match /private/{docId} {
+        allow read, update, delete: if isAdmin();
+        allow create: if docId == 'info'
+          && isValidId(kidId)
+          && isValidKidPrivate(incoming())
+          && (isAdmin() || !exists(/databases/$(database)/documents/kids/$(kidId)/private/info));
+      }
+    }
+
+    // Test connection document
+    match /test/{docId} {
+      allow read: if isValidId(docId);
+      allow write: if false;
+    }
+  }
+}

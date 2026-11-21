@@ -1,0 +1,6 @@
+{
+  "name": "كرنفال الأطفال 2027 - المنظومة الميدانية",
+  "description": "تطبيق ويب تقدمي (PWA) لإدارة كرنفال الأطفال ليوم واحد (السبت 30 يناير 2027) يشمل تسجيل الخدام والمخدومين، المسح بالـ QR أوفلاين، حساب النقاط، وإدارة الطوارئ.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

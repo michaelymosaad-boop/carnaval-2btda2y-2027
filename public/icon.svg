@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#334155" stroke-width="6" />
+  <!-- Top-Left Quadrant: Creative (Coral/Orange) -->
+  <rect x="116" y="116" width="124" height="124" rx="28" fill="#F97316" />
+  <circle cx="178" cy="178" r="26" fill="#FFF7ED" />
+  <!-- Top-Right Quadrant: Psychological (Purple) -->
+  <rect x="272" y="116" width="124" height="124" rx="28" fill="#A855F7" />
+  <path d="M334 202s-28-17-28-36c0-11 9-20 20-20 6 0 12 3 15 8 3-5 9-8 15-8 11 0 20 9 20 20 0 19-28 36-28 36h-14z" fill="#FAF5FF" />
+  <!-- Bottom-Left Quadrant: Tech (Cyan/Blue) -->
+  <rect x="116" y="272" width="124" height="124" rx="28" fill="#0EA5E9" />
+  <rect x="148" y="306" width="60" height="42" rx="6" fill="none" stroke="#F0F9FF" stroke-width="8" />
+  <line x1="138" y1="358" x2="218" y2="358" stroke="#F0F9FF" stroke-width="8" stroke-linecap="round" />
+  <!-- Bottom-Right Quadrant: Spiritual (Gold/Amber) -->
+  <rect x="272" y="272" width="124" height="124" rx="28" fill="#EAB308" />
+  <path d="M334 298l10 24 26 3-19 18 5 26-22-13-22 13 5-26-19-18 26-3z" fill="#FEFCE8" />
+</svg>
