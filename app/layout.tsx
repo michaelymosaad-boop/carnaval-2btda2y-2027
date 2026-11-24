@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Cairo } from 'next/font/google';
 import './globals.css';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <ServiceWorkerRegistrar />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
